@@ -1,0 +1,12 @@
+{
+  "name": "shan-shui-esp32-host",
+  "private": true,
+  "type": "module",
+  "description": "Mac host for the shan-shui-inf ESP32-S3 reflective LCD wallpaper",
+  "scripts": {
+    "preview": "node cli.js preview",
+    "stream": "node cli.js stream",
+    "frames": "node cli.js frames",
+    "test": "node --test test/*.test.js"
+  }
+}

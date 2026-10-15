@@ -1,0 +1,10 @@
+shan-shui-inf generator
+Copyright (c) 2018 Lingdong Huang
+Licensed under the MIT License. See vendor/shan-shui-inf/LICENSE.
+
+vendor/shan-shui-inf/index.html is an unmodified copy of
+https://github.com/LingDong-/shan-shui-inf at commit
+9f754d2b2e73495db7883d4d4055a7b0903b0454.
+
+The host and firmware in this project are separate and are covered by the
+MIT license at the repository root.

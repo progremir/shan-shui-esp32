@@ -1,0 +1,9 @@
+Upstream: https://github.com/LingDong-/shan-shui-inf
+Pinned commit: 9f754d2b2e73495db7883d4d4055a7b0903b0454
+Files copied unmodified from that commit: index.html, LICENSE
+
+Copyright (c) 2018 Lingdong Huang
+SPDX-License-Identifier: MIT
+
+The copyright notice and the permission notice in LICENSE must stay with
+index.html in every copy or substantial portion of the generator.

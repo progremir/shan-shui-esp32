@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>shan shui</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #d7d0c2; color: #24221c; }
+    main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; font: 16px/1.45 Georgia, serif; }
+    canvas { width: 800px; height: 600px; image-rendering: pixelated; background: #f4f0e6; box-shadow: 0 10px 36px rgba(40, 30, 10, 0.18); }
+    p { max-width: 36rem; margin: 0; text-align: center; }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="screen" width="400" height="300"></canvas>
+    <p>Preview of the 400×300 reflective LCD. One bit, paper and ink. No panel required.</p>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const speed = Number(params.get("speed") || 6);
+    const canvas = document.getElementById("screen");
+    const ctx = canvas.getContext("2d");
+    const off = document.createElement("canvas");
+    off.width = 0;
+    off.height = 300;
+    const octx = off.getContext("2d");
+    let have = 0;
+    let view = 0;
+    let loading = false;
+
+    function shift() {
+      const drop = 160;
+      if (view < drop || off.width < drop + 400) return;
+      const kept = off.width - drop;
+      const tmp = document.createElement("canvas");
+      tmp.width = kept;
+      tmp.height = 300;
+      tmp.getContext("2d").drawImage(off, drop, 0, kept, 300, 0, 0, kept, 300);
+      off.width = kept;
+      octx.drawImage(tmp, 0, 0);
+      view -= drop;
+    }
+
+    async function more() {
+      if (loading || have - view > 900) return;
+      loading = true;
+      const n = 160;
+      const start = have;
+      try {
+        const img = new Image();
+        img.src = "/columns.png?start=" + start + "&n=" + n;
+        await img.decode();
+        const grown = document.createElement("canvas");
+        grown.width = off.width + img.width;
+        grown.height = 300;
+        const g = grown.getContext("2d");
+        if (off.width) g.drawImage(off, 0, 0);
+        g.drawImage(img, off.width, 0);
+        off.width = grown.width;
+        octx.drawImage(grown, 0, 0);
+        have += img.width;
+      } finally {
+        loading = false;
+      }
+    }
+
+    let last = performance.now();
+    function tick(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      view += speed * dt;
+      if (have >= 400 && view > have - 400) view = have - 400;
+      if (view < 0) view = 0;
+      ctx.fillStyle = "#f4f0e6";
+      ctx.fillRect(0, 0, 400, 300);
+      if (off.width) ctx.drawImage(off, Math.floor(view), 0, 400, 300, 0, 0, 400, 300);
+      shift();
+      if (have - view < 700) more();
+      requestAnimationFrame(tick);
+    }
+    more().then(function () { requestAnimationFrame(tick); });
+  </script>
+</body>
+</html>
