@@ -101,6 +101,7 @@ export class ColumnCache {
     this.threshold = opts.threshold;
     this.seed = opts.seed;
     this.stride = columnStride(this.height);
+    this.base = 0;
     this.count = 0;
     this.packed = new Uint8Array(0);
     this.carry = new Float64Array(this.height);
@@ -108,11 +109,14 @@ export class ColumnCache {
     this._job = null;
   }
 
-  reset() {
-    this.count = 0;
+  // Columns [base, count) are painted. Rebasing starts painting at `x` with a
+  // fresh dither carry instead of painting every column before it.
+  reset(x = 0) {
+    this.base = x;
+    this.count = x;
     this.packed = new Uint8Array(0);
     this.carry = new Float64Array(this.height);
-    this._want = 0;
+    this._want = x;
   }
 
   // Paint further columns while the serial loop is waiting. One strip at a
@@ -141,22 +145,34 @@ export class ColumnCache {
       const skyline = skylineFromGray(gray, n, this.height, 200);
       applyClouds(bits, n, this.height, this.count, this.seed, skyline);
       const piece = packColumns(bits, n, this.height);
-      const next = new Uint8Array(this.packed.length + piece.length);
-      next.set(this.packed, 0);
-      next.set(piece, this.packed.length);
+      // Keep a bounded window. Streaming for hours used to grow this forever
+      // and copy all of it on every strip.
+      const keepCols = this.count - this.base > 8000 ? 4000 : this.count - this.base;
+      const keep = this.packed.subarray(this.packed.length - keepCols * this.stride);
+      const next = new Uint8Array(keep.length + piece.length);
+      next.set(keep, 0);
+      next.set(piece, keep.length);
       this.packed = next;
+      this.base = this.count - keepCols;
       this.count += n;
     }
   }
 
   async packedRange(start, n) {
     const end = start + n;
+    // A board that kept running while this process restarted can ask for a
+    // column far past what is painted. Jump there rather than refuse it.
+    if (start < this.base || start > this.count + 2 * this.stripWidth) {
+      if (this._job) await this._job.catch(() => {});
+      this.reset(start);
+    }
     while (this.count < end) {
       if (this._job) await this._job;
       else await this.ensure(Math.min(end, this.count + this.stripWidth));
     }
     const stride = this.stride;
-    return this.packed.subarray(start * stride, (start + n) * stride);
+    const from = start - this.base;
+    return this.packed.subarray(from * stride, (from + n) * stride);
   }
 
   async windowBits(start, n) {

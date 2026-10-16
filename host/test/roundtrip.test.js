@@ -256,3 +256,29 @@ test("the same exchange round-trips through a PTY", async () => {
     bridge.close();
   }
 });
+
+test("a NEED without a HELLO is still served (host restarted, board kept running)", async () => {
+  const [hostPort, devPort] = link();
+  const device = (async () => {
+    devPort.write(encodeNeed(52000, chunk));
+    const parser = new Parser();
+    const deadline = Date.now() + 4000;
+    let got = false;
+    while (!got && Date.now() < deadline) {
+      const buf = await devPort.read(200);
+      if (buf) parser.push(buf);
+      for (let frame = parser.take(); frame; frame = parser.take()) {
+        if (frame.type === TYPE.COLUMNS) {
+          assert.equal(decodeColumns(frame.payload).startX, 52000);
+          got = true;
+        }
+      }
+    }
+    assert.equal(got, true);
+    devPort.write(encodeAck(52000, chunk));
+  })();
+  await Promise.all([
+    runHostSession(hostPort, source(), { height, speed: 6, stopAfter: chunk, onLog() {} }),
+    device,
+  ]);
+});

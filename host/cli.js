@@ -142,9 +142,11 @@ async function stream(args) {
   }
   const seed = String(args.seed || DEFAULT_SEED);
   const speed = Number(args.speed || SCROLL_PX_PER_SEC);
-  const gen = new Generator({ seed, userH: Number(process.env.SCENE_USER_H || SCENE_USER_H) });
+  const userH = Number(process.env.SCENE_USER_H || SCENE_USER_H);
+  let gen = new Generator({ seed, userH });
   await gen.start();
-  const cache = makeCache(gen, seed);
+  let cache = makeCache(gen, seed);
+  let renderFailures = 0;
   let port = null;
   let stopping = false;
   const stop = () => {
@@ -180,7 +182,17 @@ async function stream(args) {
       await runHostSession(port, cache, {
         height: PANEL_H,
         speed,
+        onRenderError(err) {
+          renderFailures++;
+          console.error(`render failed (${renderFailures}): ${err.stack || err.message || err}`);
+          if (renderFailures >= 3) {
+            const e = new Error("generator keeps failing");
+            e.code = "GENERATOR_FAILED";
+            throw e;
+          }
+        },
         onAck(ack) {
+          renderFailures = 0;
           columns += ack.columns;
           if (columns % 240 < ack.columns) console.log(`sent through column ${ack.startX + ack.columns}`);
         },
@@ -195,7 +207,31 @@ async function stream(args) {
       break;
     } catch (err) {
       if (stopping) break;
-      if (err?.code !== "PORT_CLOSED") throw err;
+      if (err?.code !== "PORT_CLOSED") {
+        // Never leave the board without a host: restart Chrome and carry on.
+        console.error(`host error, restarting the generator: ${err?.stack || err}`);
+        try {
+          port?.close();
+        } catch {
+          /* already closed */
+        }
+        port = null;
+        try {
+          await gen.close();
+        } catch {
+          /* Chrome may already be gone */
+        }
+        renderFailures = 0;
+        gen = new Generator({ seed, userH });
+        try {
+          await gen.start();
+        } catch (startErr) {
+          console.error(`generator restart failed: ${startErr.message}`);
+          await new Promise((r) => setTimeout(r, 5000));
+        }
+        cache = makeCache(gen, seed);
+        continue;
+      }
       console.error("board went away. short-press the middle button to turn it on. waiting");
       try {
         port.close();
