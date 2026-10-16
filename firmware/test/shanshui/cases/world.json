@@ -1,0 +1,22 @@
+[
+ {
+  "name": "planner_wallpaper",
+  "seed": "wallpaper",
+  "js": "var s=''; for (var k=0;k<8;k++){ s += mountplanner(k*512,(k+1)*512).map(function(r){return r.tag+'@'+r.x.toFixed(6)+','+r.y.toFixed(6)+';'}).join('') + '|'; } s"
+ },
+ {
+  "name": "planner_left",
+  "seed": "abc",
+  "js": "var f=function(reg){return reg.map(function(r){return r.tag+'@'+r.x.toFixed(6)+','+r.y.toFixed(6)+';'}).join('')+'|'}; var s=f(mountplanner(0,512)); s+=f(mountplanner(-512,0)); for (var k=1;k<6;k++){ s+=f(mountplanner(k*512,(k+1)*512)); } s"
+ },
+ {
+  "name": "chunks_wallpaper",
+  "seed": "wallpaper",
+  "js": "chunkloader(0, 1500); chunkloader(0, 3000); var s=''; for (var i=0;i<MEM.chunks.length;i++){ var c=MEM.chunks[i]; s += c.tag+'@'+c.x.toFixed(6)+','+c.y.toFixed(6)+':'+c.canv.replace(/<text[\\s\\S]*?<\\/text>/g,'')+'|'; } s"
+ },
+ {
+  "name": "chunks_x7",
+  "seed": "x7",
+  "js": "chunkloader(0, 2600); var s=''; for (var i=0;i<MEM.chunks.length;i++){ var c=MEM.chunks[i]; s += c.tag+'@'+c.x.toFixed(6)+','+c.y.toFixed(6)+':'+c.canv.replace(/<text[\\s\\S]*?<\\/text>/g,'')+'|'; } s"
+ }
+]

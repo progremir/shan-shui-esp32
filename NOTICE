@@ -6,5 +6,8 @@ vendor/shan-shui-inf/index.html is an unmodified copy of
 https://github.com/LingDong-/shan-shui-inf at commit
 9f754d2b2e73495db7883d4d4055a7b0903b0454.
 
-The host and firmware in this project are separate and are covered by the
-MIT license at the repository root.
+firmware/shan_shui_wallpaper/src/shanshui/ is a C++ port of that file and
+is covered by the same copyright and MIT license.
+
+The rest of the host and firmware in this project is covered by the MIT
+license at the repository root.

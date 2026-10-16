@@ -1,0 +1,14 @@
+[
+ {"name": "rnd", "seed": "wallpaper", "js": "[Math.random(), Math.random(), Math.random()].map(function(v){return v.toFixed(15)}).join(',')"},
+ {"name": "noise", "seed": "wallpaper", "js": "[Noise.noise(0.3), Noise.noise(12.7, 3.1), Noise.noise(1000.25, 2, 0.5), Noise.noise(-5.5)].map(function(v){return v.toFixed(15)}).join(',')"},
+ {"name": "poly", "seed": "a", "js": "poly([[0,0],[10.25,5.75],[-0.25,-3.05]], {xof: 1, fil: 'rgba(100,100,100,0.3)', wid: 1.5})"},
+ {"name": "stroke", "seed": "b", "js": "stroke([[0,0],[10,5],[20,0],[30,10],[40,3]], {wid: 3, col: 'rgba(100,100,100,0.5)'})"},
+ {"name": "blob", "seed": "c", "js": "blob(50, 60, {len: 30, wid: 10, ang: 0.3})"},
+ {"name": "div", "seed": "c", "js": "JSON.stringify(div([[0,0],[10,5],[20,-4]], 3).map(function(p){return [p[0].toFixed(6), p[1].toFixed(6)]}))"},
+ {"name": "bezmh", "seed": "c", "js": "JSON.stringify(bezmh([[0,0],[10,5],[20,-4],[30,8]], 1.5).map(function(p){return [p[0].toFixed(6), p[1].toFixed(6)]}))"},
+ {"name": "texture", "seed": "d", "js": "texture([[[0,0],[10,1],[20,0],[30,2],[40,0],[50,1]],[[0,10],[10,11],[20,10],[30,12],[40,10],[50,11]],[[0,20],[10,21],[20,20],[30,22],[40,20],[50,21]]], {tex: 30, sha: 1})"},
+ {"name": "water", "seed": "e", "js": "water(100, 400, 3)"},
+ {"name": "gauss", "seed": "f", "js": "[randGaussian(), normRand(3, 9), wtrand(function(x){return x*x})].map(function(v){return v.toFixed(15)}).join(',')"},
+ {"name": "triangulate", "seed": "g", "js": "JSON.stringify(PolyTools.triangulate([[0,0],[40,5],[60,40],[30,25],[5,50]], {area: 200, convex: true, optimize: false}).map(function(t){return t.map(function(p){return [p[0].toFixed(4), p[1].toFixed(4)]})}))"},
+ {"name": "triangulate2", "seed": "g", "js": "JSON.stringify(PolyTools.triangulate([[0,0],[40,5],[60,40],[30,25],[5,50]], {area: 100}).map(function(t){return t.map(function(p){return [p[0].toFixed(4), p[1].toFixed(4)]})}))"}
+]
