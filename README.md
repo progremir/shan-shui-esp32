@@ -1,86 +1,95 @@
-# Shan shui on an ESP32-S3 reflective LCD
+# Shan shui wallpaper
 
-A [Waveshare ESP32-S3-RLCD-4.2](https://www.waveshare.com/esp32-s3-rlcd-4.2.htm) paints an endless [shan-shui-inf](https://github.com/LingDong-/shan-shui-inf) landscape by itself and pans across it. No computer is needed after flashing: plug it into any USB power or run it from the battery.
+An endless Chinese landscape painting that slowly scrolls across a small paper-like screen. The board paints it by itself, forever, with no computer or internet connection. Every time you turn it on, you get a new landscape.
 
-The firmware carries a C++ port of shan-shui-inf at commit `9f754d2b2e73495db7883d4d4055a7b0903b0454`. One core plans and paints the mountains, trees, buildings, boats, and water into a strip of columns in PSRAM; the other pans the view across it. The painting is dithered to the panel's 1-bit ink and paper, with a few clouds in the open sky.
-
-## Preview
-
-Columns 0, 400, 800, and 1200 of the `wallpaper` seed as 1-bit panel frames, drawn at 2×. They are not photographs of the LCD. The board paints a new seed at every power-on, so its landscapes differ.
+The paintings come from [shan-shui-inf](https://github.com/LingDong-/shan-shui-inf) by Lingdong Huang, a generator that draws mountains, trees, houses, boats, and water in the style of Chinese ink paintings. This project runs it on an ESP32 microcontroller with a reflective black-and-white display.
 
 ![Four moments of the scroll](docs/preview/pan.png)
 
-[0](docs/preview/frame-0000.png) · [400](docs/preview/frame-0400.png) · [800](docs/preview/frame-0800.png) · [1200](docs/preview/frame-1200.png)
+*The screen is black and white, so gray tones are made of dots. These are frames at 2× size.*
 
-## Hardware
+## What you need
 
-ESP32-S3-WROOM-1-N16R8: dual-core 240 MHz, 16 MB flash, 8 MB octal PSRAM. USB-C is power, flashing, and the serial link.
+- A [Waveshare ESP32-S3-RLCD-4.2](https://www.waveshare.com/esp32-s3-rlcd-4.2.htm). It is a single board with the screen, buttons, and battery charging built in. No soldering or extra parts.
+- A USB-C cable.
+- A computer to install the software once. The steps below are for macOS and Linux; on Windows, use the ready-made image (see *Alternative* below).
 
-The display is the onboard 4.2 inch reflective monochrome LCD (ST7305, SPI, no backlight). The firmware uses the vendor landscape window, 400×300, at 1 bit per pixel. Init command `0x3A = 0x11` selects that depth.
+## Install
 
-| Signal | GPIO |
-| --- | --- |
-| SCK | 11 |
-| MOSI | 12 |
-| CS | 40 |
-| DC | 5 |
-| RST | 41 |
-| KEY | 18, active low |
-| BOOT | 0, active low |
+**1. Install arduino-cli and the ESP32 support.** On macOS with [Homebrew](https://brew.sh):
 
-SPI is mode 0 at 10 MHz. The register sequence and landscape pixel layout follow the vendor example for this board. Audio, the microphones, the humidity sensor, the RTC, the battery charger, the microSD slot, and the GPIO header are unused.
+```sh
+brew install arduino-cli
+arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli core install esp32:esp32 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+```
 
-The middle button is power. A short press turns the board on, and a long press turns it off. Firmware cannot read that button. Hold BOOT while plugging in USB if a flash does not catch the port.
+On other systems, see the [arduino-cli install guide](https://arduino.github.io/arduino-cli/latest/installation/), then run the last two commands.
 
-**Flashing replaces the firmware currently on the board.**
+**2. Download this project and plug in the board.**
 
-## Requirements
+```sh
+git clone https://github.com/progremir/shan-shui-esp32.git
+cd shan-shui-esp32
+```
 
-- arduino-cli (or Arduino IDE 2) with the Espressif esp32 boards package 3.x.
-- For the reference test only: Node.js 20 or newer and a C++20 compiler.
+Find the board's port. On macOS run `ls /dev/cu.usb*`; it looks like `/dev/cu.usbmodem1101`. On Linux it is usually `/dev/ttyACM0`.
 
-## Flash
-
-Install [arduino-cli](https://arduino.github.io/arduino-cli/) and the Espressif esp32 boards package 3.x, then:
+**3. Build and install.** Replace the port with yours:
 
 ```sh
 firmware/build.sh /dev/cu.usbmodem1101
 ```
 
-On macOS the port is a `cu.usbmodem` device (`ls /dev/cu.usb*`). On Linux it is `/dev/ttyACM*` or `/dev/ttyUSB*`. Without a port the script only compiles. If the upload cannot sync, hold BOOT, start the upload, and release BOOT when writing starts.
+This replaces whatever was on the board before. The first build takes a few minutes.
 
-`build.sh` passes `-fsingle-precision-constant`. The painter works in float, and without that flag its decimal constants pull the math back into software double, which paints about half as fast. The Arduino IDE also works (ESP32S3 Dev Module, USB CDC On Boot: Enabled, USB Mode: Hardware CDC and JTAG, Flash Size: 16MB, Partition Scheme: 16M Flash (3MB APP/9.9MB FATFS), PSRAM: OPI PSRAM), just slower.
+**If something goes wrong**
 
-`firmware/flash/` holds a prebuilt image for `esptool.py write_flash @flash_args` from that directory.
+- *The upload can't connect:* hold the BOOT button (right), start the command again, and let go once it says "Writing".
+- *"bad CPU type in executable" on an Apple Silicon Mac:* one of the Arduino tools needs Rosetta. Run `softwareupdate --install-rosetta`.
 
-## Run
+**Alternative: without building.** `firmware/flash/` has a ready-made image. With [esptool](https://docs.espressif.com/projects/esptool/) installed (`pip install esptool`), and your port (on Windows, a `COM` port from Device Manager):
 
-Power it. The panel shows a thin double border for about 15 seconds while the first screen is painted, then the landscape starts to pan. Every power-on paints a new landscape from a random seed. After 400,000 columns (about 5 hours at the fastest pan, a day at the default) it starts a new one, because the float coordinates get coarse that far out.
+```sh
+cd firmware/flash
+esptool.py --chip esp32s3 --port /dev/cu.usbmodem1101 write_flash @flash_args
+```
 
-KEY, on the left, steps the pan faster: 2, 4, 6, 8, 12, 18, then 24 pixels per second. BOOT, on the right, steps it slower. The painter keeps 480 columns ready ahead of the view and paints about 50 columns a second, so no speed outruns it.
+## Using it
 
-USB serial (115200) prints the seed, painting speed, and free memory.
+Turn it on with the middle (power) button. You'll see a thin double frame for about 15 seconds while it paints the first view, then the landscape starts moving.
 
-## Development
+- **Left button:** scroll faster.
+- **Right button:** scroll slower.
+- **Middle button:** short press turns it on, long press turns it off.
 
-`firmware/test/shanshui/` checks the port against the original. `ref.mjs` runs the unmodified `vendor/shan-shui-inf/index.html` in Node, and the same cases run through the C++ port built in double precision; the SVG text must match byte for byte.
+It runs from USB power or a battery. The screen has no backlight: like paper, it needs room light to be seen, and that is also why it uses very little power.
+
+## How it works
+
+The original shan-shui-inf is a web page that draws in a browser. This project rewrites it in C++ so it can run on the board. The board's two processor cores share the work: one paints the landscape a little ahead of what you see, and the other scrolls the view across it.
+
+The display only shows black or white, so the painting's soft grays are turned into fine patterns of dots (dithering).
+
+To make sure the rewrite draws the same thing as the original, there is a test that runs both side by side and compares their output (needs Node.js and a C++ compiler):
 
 ```sh
 make -C firmware/test/shanshui check
 ```
 
-`render.cpp` in the same directory paints any number of columns to an image on the desktop, with timing and memory figures.
+## What's in this repository
 
-`host/` is the earlier setup, in which a Mac rendered the painting in Chrome and streamed it over USB. It needs the streaming firmware from commit `918215f` and does not talk to the current firmware.
+| Folder | Contents |
+| --- | --- |
+| `firmware/shan_shui_wallpaper/` | The program that runs on the board |
+| `firmware/shan_shui_wallpaper/src/shanshui/` | The C++ version of shan-shui-inf |
+| `firmware/flash/` | Ready-made image for flashing without building |
+| `firmware/test/` | Tests that compare the C++ version with the original |
+| `vendor/shan-shui-inf/` | The original shan-shui-inf web page, unchanged |
+| `host/` | An older version where a computer drew the painting and sent it to the board over USB. Not needed. |
 
-## Config
+## Credits and license
 
-Panel numbers are in `firmware/shan_shui_wallpaper/config.h`. Tile size, look-ahead, and the painting length are at the top of `firmware/shan_shui_wallpaper/shan_shui_wallpaper.ino`.
+The landscape generator is [shan-shui-inf](https://github.com/LingDong-/shan-shui-inf), Copyright (c) 2018 Lingdong Huang, MIT license. The C++ version in `firmware/shan_shui_wallpaper/src/shanshui/` is a port of it and keeps that license; see `vendor/shan-shui-inf/LICENSE`.
 
-## License
-
-shan-shui-inf is Copyright (c) 2018 Lingdong Huang, MIT. The notice is `vendor/shan-shui-inf/LICENSE`. `vendor/shan-shui-inf/index.html` is the unmodified file from the pinned commit, and `firmware/shan_shui_wallpaper/src/shanshui/` is a C++ port of it. Keep that copyright and permission text with either if you redistribute them.
-
-The host and firmware are separately MIT. See `LICENSE` and `NOTICE`.
-
-The ST7305 register values are the vendor init for this board. This repository does not copy their example tree.
+Everything else is MIT licensed; see `LICENSE` and `NOTICE`.
